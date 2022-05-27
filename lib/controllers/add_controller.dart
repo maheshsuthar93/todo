@@ -15,6 +15,8 @@ class AddController extends GetxController {
   User? user;
   CollectionReference _collectionRef =
       FirebaseFirestore.instance.collection(FIREBASE_TABLE_TODO);
+  RxString title = "Add Todo".obs;
+  String todoId = "";
 
   @override
   void onInit() {
@@ -25,20 +27,57 @@ class AddController extends GetxController {
 
   init() async {
     user = await FirebaseAuth.instance.currentUser;
+    if (Get.arguments != null) {
+      title.value = "Update Todo";
+      todoId = Get.arguments["id"];
+      getTask();
+    }
   }
 
   addTodo() {
-    _collectionRef.add({
-      FIREBASE_KEY_CREATED_AT: FieldValue.serverTimestamp(),
-      FIREBASE_KEY_DATE: dateController.text.toString().trim(),
-      FIREBASE_KEY_DESC: desController.text.toString().trim(),
-      FIREBASE_KEY_NAME: nameController.text.toString().trim(),
-      FIREBASE_KEY_USERID: user!.uid,
-    }).then((value) async => {
-          await _collectionRef.doc(value.id).update({"id": value.id}),
-          showToast(ADD_TODO_SUCCESSFULLY),
-          Get.back()
-        });
+    if (this.todoId.isEmpty)
+      _collectionRef.add({
+        FIREBASE_KEY_CREATED_AT: FieldValue.serverTimestamp(),
+        FIREBASE_KEY_DATE: dateController.text.toString().trim(),
+        FIREBASE_KEY_DESC: desController.text.toString().trim(),
+        FIREBASE_KEY_NAME: nameController.text.toString().trim(),
+        FIREBASE_KEY_USERID: user!.uid,
+      }).then((value) async => {
+            await _collectionRef.doc(value.id).update({"id": value.id}),
+            showToast(ADD_TODO_SUCCESSFULLY),
+            Get.back()
+          });
+    else
+      _collectionRef.doc(this.todoId).update({
+        FIREBASE_KEY_CREATED_AT: FieldValue.serverTimestamp(),
+        FIREBASE_KEY_DATE: dateController.text.toString().trim(),
+        FIREBASE_KEY_DESC: desController.text.toString().trim(),
+        FIREBASE_KEY_NAME: nameController.text.toString().trim(),
+        FIREBASE_KEY_USERID: user!.uid,
+      }).then((value) async =>
+          {showToast(ADD_TODO_UPDATED_SUCCESSFULLY), Get.back()});
+  }
+
+  getTask() {
+    _collectionRef
+        .doc(this.todoId)
+        .get()
+        .then((DocumentSnapshot documentSnapshot) {
+      if (documentSnapshot.exists) {
+        Map<String, dynamic>? data =
+            documentSnapshot.data() as Map<String, dynamic>?;
+
+        if (data != null) {
+          nameController.text = data[FIREBASE_KEY_NAME];
+          desController.text = data[FIREBASE_KEY_DESC];
+          dateController.text = data[FIREBASE_KEY_DATE];
+        }
+
+        print('Document data: ${documentSnapshot.data()}');
+      } else {
+        print('Document does not exist on the database');
+      }
+    });
   }
 
   isValid() {

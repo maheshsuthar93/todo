@@ -23,7 +23,7 @@ class AddTodoScreen extends StatelessWidget {
           backgroundColor: primary,
           elevation: 0,
           centerTitle: true,
-          title: TodoTitle(title: ADD_TODO_TITLE)),
+          title: Obx(()=>TodoTitle(title: _ac.title.value))),
       body: Padding(
         padding: const EdgeInsets.only(left: 15.0, right: 15),
         child: Column(
